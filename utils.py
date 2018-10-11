@@ -7,8 +7,8 @@ import threading
 
 from channel import Channel
 from environment import Environment
-from interaction import Interaction
-from fish import Fish
+from replica_fish import ReplicaFish
+from DelightFish import Fish
 from observer import Observer
 
 
@@ -58,6 +58,9 @@ def generate_fish(
     channel,
     interaction,
     lim_neighbors,
+    k_coh,
+    k_ar,
+    alpha,
     neighbor_weights=None,
     fish_max_speeds=None,
     clock_freqs=None,
@@ -101,6 +104,9 @@ def generate_fish(
             id=i,
             channel=channel,
             interaction=interaction,
+            k_coh = k_coh,
+            k_ar = k_ar,
+            alpha = alpha,
             lim_neighbors=lim_neighbors,
             neighbor_weight=neighbor_weights[i],
             fish_max_speed=fish_max_speeds[i],
@@ -111,6 +117,143 @@ def generate_fish(
 
     return fish
 
+def generate_replica_fish(
+    n,
+    channel,
+    interaction,
+    lim_neighbors,
+    neighbor_weights=None,
+    fish_max_speeds=None,
+    clock_freqs=None,
+    verbose=False,
+    names=None
+):
+    """Generate some replica fish
+
+    Arguments:
+        n {int} -- Number of replica fish to generate
+        channel {Channel} -- Channel instance
+        interaction {Interaction} -- Interaction instance
+        lim_neighbors {list} -- Tuple of min and max neighbors
+        neighbor_weight {float|list} -- List of neighbor weights
+        fish_max_speeds {float|list} -- List of max speeds
+        clock_freqs {int|list} -- List of clock speeds
+        names {list} -- List of names for your replica fish
+    """
+
+    if neighbor_weights is None:
+        neighbor_weights = [1.0] * n
+    elif not isinstance(neighbor_weights, list):
+        neighbor_weights = [neighbor_weights] * n
+
+    if fish_max_speeds is None:
+        fish_max_speeds = [1.0] * n
+    elif not isinstance(fish_max_speeds, list):
+        fish_max_speeds = [fish_max_speeds] * n
+
+    if clock_freqs is None:
+        clock_freqs = [1] * n
+    elif not isinstance(clock_freqs, list):
+        clock_freqs = [clock_freqs] * n
+
+    if names is None:
+        names = ['Unnamed'] * n
+
+    replica_fish = []
+    for i in range(n):
+        replica_fish.append(ReplicaFish(
+            id=i,
+            channel=channel,
+            interaction=interaction,
+            lim_neighbors=lim_neighbors,
+            neighbor_weight=neighbor_weights[i],
+            fish_max_speed=fish_max_speeds[i],
+            clock_freq=clock_freqs[i],
+            verbose=verbose,
+            name=names[i]
+        ))
+
+    return replica_fish
+
+def generate_all_fish(
+    n_fish,
+    n_replica_fish,
+    channel,
+    interaction,
+    k_coh,
+    k_ar,
+    alpha,
+    lim_neighbors,
+    neighbor_weights=None,
+    fish_max_speeds=None,
+    clock_freqs=None,
+    verbose=False,
+    names=None
+):
+    """Generate some replica fish
+
+    Arguments:
+        n_fish {int} -- Number of fish to generate
+        n_replica_fish {int} -- Number of replica fish to generate
+        channel {Channel} -- Channel instance
+        interaction {Interaction} -- Interaction instance
+        lim_neighbors {list} -- Tuple of min and max neighbors
+        neighbor_weight {float|list} -- List of neighbor weights
+        fish_max_speeds {float|list} -- List of max speeds
+        clock_freqs {int|list} -- List of clock speeds
+        names {list} -- List of names for your replica fish
+    """
+    n = n_fish + n_replica_fish
+    if neighbor_weights is None:
+        neighbor_weights = [1.0] * n
+    elif not isinstance(neighbor_weights, list):
+        neighbor_weights = [neighbor_weights] * n
+
+    if fish_max_speeds is None:
+        fish_max_speeds = [1.0] * n
+    elif not isinstance(fish_max_speeds, list):
+        fish_max_speeds = [fish_max_speeds] * n
+
+    if clock_freqs is None:
+        clock_freqs = [1] * n
+    elif not isinstance(clock_freqs, list):
+        clock_freqs = [clock_freqs] * n
+
+    if names is None:
+        names = ['Unnamed'] * n
+
+    all_fish = []
+    for i in range(n_fish):
+        all_fish.append(Fish(
+            id=i,
+            channel=channel,
+            interaction=interaction,
+            k_coh = k_coh,
+            k_ar = k_ar,
+            alpha = alpha,
+            lim_neighbors=lim_neighbors,
+            neighbor_weight=neighbor_weights[i],
+            fish_max_speed=fish_max_speeds[i],
+            clock_freq=clock_freqs[i],
+            verbose=verbose,
+            name=names[i]
+        ))
+        
+    for i in range(n_fish, n_fish + n_replica_fish):
+        all_fish.append(ReplicaFish(
+            id=i,
+            channel=channel,
+            interaction=interaction,
+            lim_neighbors=lim_neighbors,
+            neighbor_weight=neighbor_weights[i],
+            fish_max_speed=fish_max_speeds[i],
+            clock_freq=clock_freqs[i],
+            verbose=verbose,
+            name=names[i]
+        ))    
+
+    return all_fish
+
 
 def init_simulation(
     clock_freq,
@@ -120,6 +263,7 @@ def init_simulation(
     final_buffer,
     run_time,
     num_fish,
+    num_replica_fish,
     size_dist,
     center,
     spread,
@@ -145,6 +289,7 @@ def init_simulation(
             sync perfectly).
         run_time {float} -- Total run time in seconds.
         num_fish {int} -- Number of fish.
+        num_replica_fish {int} -- Number of replica fish.
         size_dist {int} -- Distortion field size.
         center {float} -- Distortion field center.
         spread {float} -- Initial fish position spread.
@@ -192,10 +337,22 @@ def init_simulation(
         clock_freqs=clock_freq,
         verbose=verbose
     )
-    channel.set_nodes(fish)
+    replica_fish = generate_replica_fish(
+        n=num_fish,
+        channel=channel,
+        interaction=interaction,
+        lim_neighbors=lim_neighbors,
+        neighbor_weights=neighbor_weights,
+        fish_max_speeds=fish_max_speeds,
+        clock_freqs=clock_freq,
+        verbose=verbose
+    )
+    all_fish = fish + replica_fish
+    channel.set_nodes(all_fish)
+    
 
     observer = Observer(
-        fish=fish,
+        fish=all_fish,
         environment=environment,
         channel=channel,
         clock_freq=clock_freq,
@@ -203,7 +360,7 @@ def init_simulation(
     )
     channel.intercept(observer)
 
-    return channel, environment, fish, interaction, observer
+    return channel, environment, all_fish, interaction, observer
 
 
 def run_simulation(
@@ -213,7 +370,8 @@ def run_simulation(
     dark=False,
     white_axis=False,
     no_legend=False,
-    no_star=False
+    no_star=False,
+    show_dist_plot=False
 ):
     """Start the simulation.
 
@@ -240,7 +398,8 @@ def run_simulation(
             dark=dark,
             white_axis=white_axis,
             no_legend=no_legend,
-            no_star=no_star
+            no_star=no_star,
+            show_dist_plot=show_dist_plot
         )
 
     print('Please wait patiently {} seconds. Thanks.'.format(run_time))

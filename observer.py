@@ -3,6 +3,7 @@ from queue import Queue, PriorityQueue
 import time
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider
 
 from eventcodes import (
     INFO_EXTERNAL, INFO_INTERNAL, START_HOP_COUNT, HOP_COUNT,
@@ -77,6 +78,7 @@ class Observer():
         self.y = []
         self.c = []
         self.status = []
+        self.avg_dist = []
         self.reset = False
 
         self.node_colors = []
@@ -356,6 +358,9 @@ class Observer():
         self.check_transmissions()
         self.check_instructions()
 
+        neighbor_distances = 0
+        num_neighbor_pairs = 0
+
         for i in range(self.num_nodes):
             self.x[i].append(self.environment.node_pos[i, 0])
             self.y[i].append(self.environment.node_pos[i, 1])
@@ -369,7 +374,104 @@ class Observer():
             else:
                 self.status[i].append(0)
 
+            neighbor_distances += sum(self.fish[i].neighbor_spacing)
+            num_neighbor_pairs += len(self.fish[i].neighbor_spacing)
+        if num_neighbor_pairs > 0:
+            self.avg_dist.append(neighbor_distances / num_neighbor_pairs)
         self.clock += 1
+
+    def time_plot(self,
+                  dark=False,
+                  white_axis=False,
+                  no_legend=False,
+                  show_bar_char=False,
+                  no_star=False):
+        """
+        Create a widget that allows you to see fish movement over time
+        """
+        ax = plt.gca()
+        fig = plt.figure(figsize=(8,3))
+        base_plot = plt.scatter(
+                self.object[0],
+                self.object[1],
+                marker=(5, 1, 0),
+                facecolors='white',
+                edgecolors='white',
+                s=2000,
+                alpha = 0.5
+            )
+
+        for i in range(self.num_nodes):
+            # start mark
+            plt.scatter(
+                self.x[i][0],
+                self.y[i][0],
+                c=colors[-2],
+                marker='s',
+                s=100,
+                alpha=0.6
+            )
+            # end mark
+            plt.scatter(
+                self.x[i][-1],
+                self.y[i][-1],
+                c=colors[0],
+                marker='>',
+                s=200,
+                alpha=1
+            )
+        ## add slider
+        slider_ax = plt.axes([0.25, 0.15, 0.65, 0.03])
+        time_slider = Slider(slider_ax, 'Time', 0, len(self.x[0]), valinit=0)
+
+        def update(time):
+            xs = []
+            ys = []
+            time = int(time)
+            for i in range(self.num_nodes):
+                xs.append(self.x[i][time])
+                ys.append(self.y[i][time])
+            base_plot.set_ydata(ys) # set new y-coordinates of the plotted points
+            base_plot.set_xdata(xs)
+            fig.canvas.draw_idle()          # redraw the plot
+
+        leg = []
+        leg.append(mpatches.Patch(color=colors[-2], label='Time 0'))
+
+        for i in range(1, len(self.status[0])):
+            leg.append(mpatches.Patch(
+                color=colors[i % len(colors)], label='Time {}'.format(i - 1)
+            ))
+        leg.append(mpatches.Patch(
+                color=colors[0], label='Final State'
+            ))
+        if not no_legend:
+            legend = plt.legend(handles=leg)
+
+        if dark:
+            ax.set_facecolor((0, 0, 0))
+            ax.spines['top'].set_color('black')
+            ax.spines['right'].set_color('black')
+
+            # Axis
+            if white_axis:
+                ax.spines['bottom'].set_color('white')
+                ax.spines['left'].set_color('white')
+                ax.tick_params(axis='x', colors='white')
+                ax.tick_params(axis='y', colors='white')
+                ax.yaxis.label.set_color('white')
+                ax.xaxis.label.set_color('white')
+                ax.title.set_color('white')
+
+            # Legend
+            if not no_legend:
+                legend.get_frame().set_facecolor('black')
+                for text in legend.get_texts():
+                    plt.setp(text, color='white')
+        plt.title("alpha: {}, k_ar: {}, fish: {}".format(self.fish[0].alpha, self.fish[0].k_ar, len(self.fish)))
+        time_slider.on_changed(update)
+        plt.show()
+
 
     def plot(
         self,
@@ -377,7 +479,8 @@ class Observer():
         white_axis=False,
         no_legend=False,
         show_bar_chart=False,
-        no_star=False
+        no_star=False,
+        show_dist_plot=False,
     ):
         """Plot the fish movement
         """
@@ -403,8 +506,8 @@ class Observer():
                 self.x[i],
                 self.y[i],
                 c=c,
-                linewidth=4.0,
-                alpha=0.66
+                linewidth=2.0,
+                alpha=0.4
             )
 
             if len(self.status[i]) < 100:
@@ -433,23 +536,28 @@ class Observer():
                 c=c,
                 marker='>',
                 s=200,
-                alpha=1
+                alpha=0.5
             )
             plt.scatter(
                 self.x[i][-1],
                 self.y[i][-1],
                 c=c,
                 marker='s',
-                s=50,
+                s=200,
                 alpha=1
             )
 
         leg = []
-        for i in range(self.num_nodes):
-            leg.append(mpatches.Patch(
-                color=self.node_colors[i], label='#{}'.format(i)
+        leg.append(mpatches.Patch(
+                color=colors[-2], label='Time 0'
             ))
-
+        for i in range(1, len(self.status[0])):
+            leg.append(mpatches.Patch(
+                color=colors[i % len(colors)], label='Time {}'.format(i - 1)
+            ))
+        leg.append(mpatches.Patch(
+                color=colors[0], label='Final State'
+            ))
         if not no_legend:
             legend = plt.legend(handles=leg)
 
@@ -473,6 +581,7 @@ class Observer():
                 legend.get_frame().set_facecolor('black')
                 for text in legend.get_texts():
                     plt.setp(text, color='white')
+        plt.title("alpha: {}, k_ar: {}, fish: {}".format(self.fish[0].alpha, self.fish[0].k_ar, len(self.fish)))
 
         plt.show()
 
@@ -487,6 +596,16 @@ class Observer():
         if self.study_leader_election:
             print('Leader:', self.study_data[0])
             print('Num. Messages:', self.study_data[1])
+
+        # assess dist change for aggregation / dispersion
+        if (show_dist_plot):
+            ax = plt.gca()
+            plt.plot(range(len(self.avg_dist)), self.avg_dist)
+            plt.scatter(range(len(self.avg_dist)), self.avg_dist)
+            ax.set_xlabel("Time")
+            ax.set_ylabel("Mean neighbor spacing")
+            ax.set_title("Mean neighbor spacing over time")
+            plt.show()
 
         if (
             show_bar_chart and
