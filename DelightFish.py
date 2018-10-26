@@ -33,7 +33,7 @@ class Fish():
         k_ar,
         alpha,
         lim_neighbors=[0, math.inf],
-        fish_max_speed=1,
+        fish_max_speed=9,
         clock_freq=1,
         neighbor_weight=1.0,
         name='Unnamed',
@@ -97,6 +97,7 @@ class Fish():
         self.hop_count_initiator = False
         self.initial_hop_count_clock = 0
         self.neighbor_spacing = [] # track neighbor distances
+        self.speed = None
 
         self.leader_election_max_id = -1
         self.last_leader_election_clock = -1
@@ -149,30 +150,26 @@ class Fish():
         long as the fish `is_started`.
         """
 
-        if not self.is_started:
-            return
+        while  self.is_started:
+            start_time = time.time()
+            self.eval()
+            time_elapsed = time.time() - start_time
 
-        start_time = time.time()
-        self.eval()
-        time_elapsed = time.time() - start_time
+            sleep_time = (self.clock_speed / 2) - time_elapsed
 
-        sleep_time = (self.clock_speed / 2) - time_elapsed
+            # print(time_elapsed, sleep_time, self.clock_speed / 2)
+            time.sleep(max(0, sleep_time))
+            if sleep_time < 0 and self.verbose:
+                print('Warning frequency too high or computer too slow')
 
-        # print(time_elapsed, sleep_time, self.clock_speed / 2)
-        time.sleep(max(0, sleep_time))
-        if sleep_time < 0 and self.verbose:
-            print('Warning frequency too high or computer too slow')
+            start_time = time.time()
+            self.communicate()
+            time_elapsed = time.time() - start_time
 
-        start_time = time.time()
-        self.communicate()
-        time_elapsed = time.time() - start_time
-
-        sleep_time = (self.clock_speed / 2) - time_elapsed
-        time.sleep(max(0, sleep_time))
-        if sleep_time < 0 and self.verbose:
-            print('Warning frequency too high or computer too slow')
-
-        self.run()
+            sleep_time = (self.clock_speed / 2) - time_elapsed
+            time.sleep(max(0, sleep_time))
+            if sleep_time < 0 and self.verbose:
+                print('Warning frequency too high or computer too slow')
 
     def move_handler(self, event):
         """Handle move events, i.e., update the target position.
@@ -385,6 +382,8 @@ class Fish():
             final_move = new_velocity
         if self.verbose:
             print('Fish #{}: move to {}'.format(self.id, final_move))
+
+        self.speed = np.linalg.norm(final_move)
 
         return final_move
 

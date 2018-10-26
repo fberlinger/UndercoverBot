@@ -238,7 +238,7 @@ def generate_all_fish(
             verbose=verbose,
             name=names[i]
         ))
-        
+
     for i in range(n_fish, n_fish + n_replica_fish):
         all_fish.append(ReplicaFish(
             id=i,
@@ -250,7 +250,7 @@ def generate_all_fish(
             clock_freq=clock_freqs[i],
             verbose=verbose,
             name=names[i]
-        ))    
+        ))
 
     return all_fish
 
@@ -349,7 +349,7 @@ def init_simulation(
     )
     all_fish = fish + replica_fish
     channel.set_nodes(all_fish)
-    
+
 
     observer = Observer(
         fish=all_fish,
@@ -371,7 +371,8 @@ def run_simulation(
     white_axis=False,
     no_legend=False,
     no_star=False,
-    show_dist_plot=False
+    show_dist_plot=False,
+    plot=True
 ):
     """Start the simulation.
 
@@ -391,16 +392,19 @@ def run_simulation(
         for f in fish:
             f.stop()
 
-        print('It\'s time to say bye bye!')
+        print('It\'s time to say bye bye!', flush = True)
 
         observer.stop()
-        observer.plot(
-            dark=dark,
-            white_axis=white_axis,
-            no_legend=no_legend,
-            no_star=no_star,
-            show_dist_plot=show_dist_plot
-        )
+        if plot:
+            observer.plot(
+                dark=dark,
+                white_axis=white_axis,
+                no_legend=no_legend,
+                no_star=no_star,
+                show_dist_plot=show_dist_plot
+            )
+
+
 
     print('Please wait patiently {} seconds. Thanks.'.format(run_time))
 
@@ -408,7 +412,10 @@ def run_simulation(
     for f in fish:
         threading.Thread(target=f.start).start()
 
-    threading.Thread(target=observer.start).start()
+    observer_thread = threading.Thread(target=observer.start)
+    observer_thread.start()
 
     # Ciao stops run time
     threading.Timer(run_time, stop).start()
+    if not plot:
+        observer_thread.join()

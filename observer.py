@@ -79,6 +79,7 @@ class Observer():
         self.c = []
         self.status = []
         self.avg_dist = []
+        self.avg_speed = []
         self.reset = False
 
         self.node_colors = []
@@ -360,6 +361,7 @@ class Observer():
 
         neighbor_distances = 0
         num_neighbor_pairs = 0
+        total_speed = 0
 
         for i in range(self.num_nodes):
             self.x[i].append(self.environment.node_pos[i, 0])
@@ -376,8 +378,11 @@ class Observer():
 
             neighbor_distances += sum(self.fish[i].neighbor_spacing)
             num_neighbor_pairs += len(self.fish[i].neighbor_spacing)
+            if self.fish[i].speed != None:
+                total_speed += self.fish[i].speed
         if num_neighbor_pairs > 0:
             self.avg_dist.append(neighbor_distances / num_neighbor_pairs)
+            self.avg_speed.append(total_speed / self.num_nodes)
         self.clock += 1
 
     def time_plot(self,
@@ -510,25 +515,14 @@ class Observer():
                 alpha=0.4
             )
 
-            if len(self.status[i]) < 100:
-                for j in range(1, len(self.status[i])-1):
-                    face = c
-                    edge = c
-                    if self.status[i][j] == 0:
-                        marker = 'None'
-                    else:
-                        marker = 'o'
-                        face = 'black' if self.status[i][j] == -1 else c
-
-                    plt.scatter(
-                        self.x[i][j],
-                        self.y[i][j],
-                        marker=marker,
-                        facecolors=face,
-                        edgecolors=edge,
-                        s=50,
-                        alpha=1
-                    )
+            plt.scatter(
+                self.x[i],
+                self.y[i],
+                marker='o',
+                c = c,
+                s= 10,
+                alpha=0.3
+            )
 
             plt.scatter(
                 self.x[i][0],
@@ -538,6 +532,11 @@ class Observer():
                 s=200,
                 alpha=0.5
             )
+
+        # draw final position on top of other elements
+        for i in range(self.num_nodes):
+            c = self.node_colors[i]
+
             plt.scatter(
                 self.x[i][-1],
                 self.y[i][-1],
@@ -599,12 +598,19 @@ class Observer():
 
         # assess dist change for aggregation / dispersion
         if (show_dist_plot):
-            ax = plt.gca()
-            plt.plot(range(len(self.avg_dist)), self.avg_dist)
-            plt.scatter(range(len(self.avg_dist)), self.avg_dist)
-            ax.set_xlabel("Time")
-            ax.set_ylabel("Mean neighbor spacing")
-            ax.set_title("Mean neighbor spacing over time")
+            fig, (dist_ax, speed_ax) = plt.subplots(1,2)
+            dist_ax.plot(range(len(self.avg_dist)), self.avg_dist)
+            dist_ax.scatter(range(len(self.avg_dist)), self.avg_dist)
+            dist_ax.set_xlabel("Time")
+            dist_ax.set_ylabel("Mean neighbor spacing")
+            dist_ax.set_title("Mean neighbor spacing over time")
+
+            speed_ax.plot(range(len(self.avg_speed)), self.avg_speed)
+            speed_ax.scatter(range(len(self.avg_speed)), self.avg_speed)
+            speed_ax.set_xlabel("Time")
+            speed_ax.set_ylabel("Average Speed")
+            speed_ax.set_title("Average Swarm Speed over time")
+
             plt.show()
 
         if (
