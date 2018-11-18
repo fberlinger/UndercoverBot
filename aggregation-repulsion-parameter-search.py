@@ -113,7 +113,7 @@ def plot_fish(ax, fish_xs, fish_ys, title, x_axis, y_axis):
 
             # plot fish final
             ax.scatter(fish_xs[i][-1], fish_ys[i][-1], c=c,
-                        marker='s', s=200,alpha=1)
+                        marker='s', s=200,alpha=1, zorder = 100)
 
     # format black background, white axis
     ax.set_facecolor((0, 0, 0))
@@ -158,11 +158,11 @@ def plot_speed(ax, speeds):
 
 def main():
     _, (dist_ax, speed_ax) = plt.subplots(2,1)
-    ks = [0.1, 0.05, 0.03, 0.01, 0.005, 0.003]
+    ks = [0.03, 0.01, 0.005, 0.003]
     #alphas = [0.5, 1, 2, 3.5, 4]
     fish = 25
-    alpha = 35
-    initial_spread = 60
+    alpha = 40
+    initial_spread = 20
     time = 20
 
     for k in ks:
@@ -170,11 +170,17 @@ def main():
         xs, ys, neighbors, speeds, x_axis, y_axis = run_trial(time, fish, initial_spread, k, alpha)
 
         # create figure for this trial
-        fig, axes = plt.subplots(2, 2)
+        fig = plt.figure(figsize=(12, 8))
+        gridsize = (3, 2)
+        fish_ax = plt.subplot2grid(gridsize, (0, 0), colspan=2, rowspan=2)
+        trial_dist_ax = plt.subplot2grid(gridsize, (2, 0))
+        trial_speed_ax = plt.subplot2grid(gridsize, (2, 1))
+
+
         title = "{} fish, {} initial spread, {} k_ar, {} time, {} alpha".format(fish, initial_spread, k, time, alpha)
-        plot_fish(axes[0][0], xs, ys, title, x_axis, y_axis)
-        plot_dist(axes[1][0], neighbors)
-        plot_speed(axes[1][1], speeds)
+        plot_fish(fish_ax, xs, ys, title, x_axis, y_axis)
+        plot_dist(trial_dist_ax, neighbors)
+        plot_speed(trial_speed_ax, speeds)
 
         # Add to all parameter search figure
         dist_ax.plot(range(len(neighbors)), neighbors, label = "k = {}, alpha = {}".format(k, alpha))

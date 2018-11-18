@@ -97,6 +97,7 @@ class Fish():
         self.hop_count_initiator = False
         self.initial_hop_count_clock = 0
         self.neighbor_spacing = [] # track neighbor distances
+        self.orientation = 0 # track orientation, which is same as velocity
         self.speed = None
 
         self.leader_election_max_id = -1
@@ -338,7 +339,7 @@ class Fish():
         Returns:
             np.array -- neighbor's influence on velocity
         """
-        dist_neighbor = np.linalg.norm(rel_pos_to_neighbor)
+        dist_neighbor = max(0.00001, np.linalg.norm(rel_pos_to_neighbor))
         self.neighbor_spacing.append(np.abs(dist_neighbor))
         diff_alpha = dist_neighbor - self.alpha
         if self.verbose:
@@ -384,6 +385,12 @@ class Fish():
             print('Fish #{}: move to {}'.format(self.id, final_move))
 
         self.speed = np.linalg.norm(final_move)
+
+        # set orientation in direction of velocity
+        if (final_move[0] == 0):
+            self.orientation = (np.pi / 2) * np.sign(final_move[1])
+        else:
+            self.orientation = np.arctan(final_move[1] / final_move[0])
 
         return final_move
 

@@ -83,7 +83,7 @@ class Environment():
             np.random.rand(2,) * 2 - np.ones((2,))
         ) * self.noise_magnitude
 
-        return target_pos + self.distortion[indices[0], indices[1]] + noise
+        return target_pos + noise #self.distortion[indices[0], indices[1]] + noise
 
     def set_pos(self, source_index, new_pos):
         """Set the new position

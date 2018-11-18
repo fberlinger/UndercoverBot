@@ -184,6 +184,7 @@ def generate_all_fish(
     k_ar,
     alpha,
     lim_neighbors,
+    weights = [1],
     neighbor_weights=None,
     fish_max_speeds=None,
     clock_freqs=None,
@@ -244,12 +245,11 @@ def generate_all_fish(
             id=i,
             channel=channel,
             interaction=interaction,
-            lim_neighbors=lim_neighbors,
-            neighbor_weight=neighbor_weights[i],
+            weights = weights,
             fish_max_speed=fish_max_speeds[i],
             clock_freq=clock_freqs[i],
-            verbose=verbose,
-            name=names[i]
+            name=names[i],
+            verbose=verbose
         ))
 
     return all_fish
@@ -419,3 +419,5 @@ def run_simulation(
     threading.Timer(run_time, stop).start()
     if not plot:
         observer_thread.join()
+
+
