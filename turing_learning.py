@@ -49,6 +49,7 @@ def test_simulation(
     threading.Timer(run_time, stop).start()
     observer_thread.join()
     for fish_index in range(observer.num_nodes):
-        fish_matrixes.append(np.column_stack((observer.lin_speed[fish_index], observer.ang_speed[fish_index])))
+        single_fish = np.column_stack((observer.lin_speed[fish_index], observer.ang_speed[fish_index]))
+        fish_matrixes.append(single_fish)
     return np.stack(fish_matrixes, axis = 0)
 
