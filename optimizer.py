@@ -10,8 +10,8 @@ class Optimizer():
 
     def init_model(self, num_weights, popsize):
         # sigma and weights begin at 1
-        self.model_opt = CMAEvolutionStrategy(num_weights * [-1], 1,
-            {'popsize': popsize})
+        self.model_opt = CMAEvolutionStrategy(num_weights * [0], 1,
+            {'popsize': popsize, 'bounds': [-10, 10]})
 
     def get_model_weights(self):
         # for all models
@@ -27,7 +27,7 @@ class Optimizer():
 
     def init_classifier(self, num_weights, popsize):
         self.class_opt = CMAEvolutionStrategy(num_weights * [0], 1,
-            {'popsize': popsize})
+            {'popsize': popsize, 'bounds': [-40, 300]})
 
     def get_classifier_weights(self):
         # for all classifiers

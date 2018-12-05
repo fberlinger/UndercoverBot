@@ -151,7 +151,7 @@ class Fish():
         long as the fish `is_started`.
         """
 
-        while  self.is_started:
+        while self.is_started:
             start_time = time.time()
             self.eval()
             time_elapsed = time.time() - start_time
@@ -306,29 +306,6 @@ class Fish():
             LeaderElection(self.id, self.id)
         ))
 
-    def comp_center(self, rel_pos):
-        """Compute the (potentially weighted) centroid of the fish neighbors
-
-        Arguments:
-            rel_pos {dict} -- Dictionary of relative positions to the
-                neighboring fish.
-
-        Returns:
-            np.array -- 2D centroid
-        """
-        center = np.zeros((2,))
-        n = max(1, len(rel_pos))
-
-        for key, value in rel_pos.items():
-            weight = self.weight_neighbor(value)
-            center += value * weight
-
-        center /= n
-
-        if self.verbose:
-            print('Fish #{}: swarm centroid {}'.format(self.id, center))
-
-        return center
 
     def attraction_repulsion(self, rel_pos_to_neighbor):
         """ Compute the attraction-repulsion component of neighbor influnce on velocity

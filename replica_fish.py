@@ -193,7 +193,13 @@ class ReplicaFish():
             float -- Weight for this neighbor
         """
         #print(rel_pos_to_neighbor)
-        hidden = np.dot(rel_pos_to_neighbor, self.input_to_hidden) + \
+
+        dist_neighbor = max(0.00001, np.linalg.norm(rel_pos_to_neighbor))
+        self.neighbor_spacing.append(np.abs(dist_neighbor))
+
+        # to do: parameterize normalization
+        neighbor_normalized = rel_pos_to_neighbor / 100
+        hidden = np.dot(neighbor_normalized, self.input_to_hidden) + \
                     self.bias_hidden
         hidden = self.logistic_sigmoid(hidden)
 

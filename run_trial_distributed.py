@@ -81,32 +81,19 @@ from multiprocessing import Pool
 # go through ten generations
 opt = Optimizer()
 pop_size = 100
-num_generations = 100
+num_generations = 200
 opt.init_model(21, pop_size)
-opt.init_classifier(46, pop_size)
-pool = Pool(processes = 4)
+opt.init_classifier(48, pop_size)
+# with open('norm_test_dist5-radii-.pkl', 'rb') as f:
+#     opt = pickle.load(f)
+pool = Pool(processes = 8)
 for i in range(num_generations):
+    print("Gen {}".format(i))
     model_weights = opt.get_model_weights()
     classifier_weights = opt.get_classifier_weights()
     ideal_model = run_full_test(None, real = True)
-    #replica_models = [Simulation() for i in model_weights]
-    replica_models_threads = []
-    sim_in_group = 20
     start_time = time.time()
     replica_models = pool.map(run_full_test, model_weights)
-    # for start in range(0, pop_size, sim_in_group):
-    #     start_time = time.time()
-    #     for index in range(start, min(start + sim_in_group, pop_size)):
-    #         weights = model_weights[index]
-    #         replica_models_threads.append(Process(target = replica_models[index].run_full_test, args = [weights]))
-    #         replica_models_threads[index].start()
-    #     for index in range(start, min(start + sim_in_group, pop_size)):
-    #         replica_models_threads[index].join()
-    #     end_time = time.time()
-    #     print("finished first {} trials in generation {}".format(index, i))
-    #     print("this took {} seconds".format(end_time - start_time))
-    #print(replica_models)
-    #replica_models = [sim.result for sim in replica_models]
     replica_models.insert(0, ideal_model)
     end_time = time.time()
     print("All trials took {} seconds".format(end_time - start_time))
@@ -114,9 +101,6 @@ for i in range(num_generations):
         all_trials = np.stack(replica_models)
     except ValueError: ## occasionally a model runs slighly different number of iterations, in which case just move on
         print("error")
-        for model in replica_models:
-            print(replica_models)
-            print(model.shape)
         continue
     start_time = time.time()
     total_classifiers = [Classifier(id = 1, weights = weights).classify_all_models(all_trials) for weights in classifier_weights]
@@ -132,31 +116,20 @@ for i in range(num_generations):
     opt.give_classifier_scores(class_scores)
 
     if (i % 10 == 0):
-        filename = "test_dist1-iter{}.pkl".format(i)
+        filename = "norm_test_dist5-iter{}-radii-only.pkl".format(i)
         with open(filename, "wb") as output:
             pickle.dump(opt, output, pickle.HIGHEST_PROTOCOL)
+
+        # also save scores
+        filename = "norm_test_dist5-iter{}-scores-radii-only.pkl".format(i)
+        with open(filename, "wb") as output:
+            pickle.dump((class_scores, model_scores), output, pickle.HIGHEST_PROTOCOL)
 pool.close()
 pool.join()
-# from multiprocessing import Process, Queue
-
-# def run_simulation(simulations, results):
-#     while simulations.qsize() > 0:
-#         simulation_params = simulations.get()
-#         # run simulation
-#         results.put(simulation_result)
-#         simulations.task_done()
-
-# if __name__ == '__main__':
-#     simulations_to_run = Queue()
-#     simulations_to_run.put({}) # simulation parameters go in this dict, add all simulations, one per line (could be done in a loop, with a list of dicts)
-#     results = Queue()
-#     for i in range(8): #number processes you want to run
-#         p = Process(target=run_simulation, args=(simulations_to_run, results))
-#         p.start()
-
-#     simulations_to_run.join()
-#     # now, all results shoud be in the results Queue
 
 # save final weights to file
-with open("test_dist1.pkl", 'wb') as output:  # Overwrites any existing file.
+with open("norm_test_dist5-radii-only-end.pkl", 'wb') as output:  # Overwrites any existing file.
     pickle.dump(opt, output, pickle.HIGHEST_PROTOCOL)
+
+with open("norm_test_dist5_scores-radii-only-end.pkl", "wb") as output:
+    pickle.dump((class_scores, model_scores), output, pickle.HIGHEST_PROTOCOL)

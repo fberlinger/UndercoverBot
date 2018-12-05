@@ -23,7 +23,8 @@ class Environment():
         conn_thres=math.inf,
         conn_drop=1,
         noise_magnitude=0.1,
-        verbose=False
+        verbose=False,
+        see_neighbor=math.inf
     ):
         """Create a new environment for the fish
 
@@ -47,6 +48,8 @@ class Environment():
                 (default: {0.1})
             verbose {bool} -- If `true` print some information during
                 simulation (default: {False})
+            see_neighbor {float} -- Tracks number of neighbors in given distance,
+                used for Turing Learning
         """
         # Params
         self.node_pos = node_pos
@@ -56,6 +59,7 @@ class Environment():
         self.noise_magnitude = noise_magnitude
         self.verbose = verbose
         self.prob_type = prob_type
+        self.record_neighbor = see_neighbor
 
         # Init
         self.num_nodes = node_pos.size
@@ -161,6 +165,12 @@ class Environment():
             return 0
 
         return 1
+
+    def neighbor_distance(self, node_a_index, node_b_index):
+        # get distance of a given neighbor for all neighbors
+        distance = self.node_dist[node_a_index, node_b_index]
+
+        return distance
 
     def prob_quadratic(self, distance):
         """Simulate quadradic connectivity probability

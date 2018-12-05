@@ -392,7 +392,7 @@ def run_simulation(
         for f in fish:
             f.stop()
 
-        print('It\'s time to say bye bye!', flush = True)
+        #print('It\'s time to say bye bye!', flush = True)
 
         observer.stop()
         if plot:
@@ -406,7 +406,7 @@ def run_simulation(
 
 
 
-    print('Please wait patiently {} seconds. Thanks.'.format(run_time))
+    #print('Please wait patiently {} seconds. Thanks.'.format(run_time))
 
     # Start the fish
     for f in fish:
