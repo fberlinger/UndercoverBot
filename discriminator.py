@@ -12,9 +12,9 @@ class Classifier():
     ):
 
         self.id = id
-        # Elman NN with 4 input neurons, 1 hidden layer with 5 neurons, and 1 outputs
-        # The input is the fish's angular and linear velocity over time and its number of
-        # neighbors. Distance to consider a neigbor is a learned parameter
+        # Elman NN with 2 input neurons, 1 hidden layer with 5 neurons, and 1 outputs
+        # The input is the fish's number of neihgbors within 2 radii
+        # Distance to consider a neigbor is a learned parameter.
         # the output is classification as agent or replica.
         # agent >0.5, return   1, replica <0.5, return 0
         # Both hidden and output layer have bias

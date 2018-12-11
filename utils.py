@@ -14,6 +14,7 @@ from observer import Observer
 
 def generate_distortion(type='linear', n=10, show=False):
     """Generates a distortion model represented as a vector field
+    Distortions are ignored during Turing Learning
     """
 
     X, Y = np.mgrid[0:n, 0:n]
@@ -191,14 +192,18 @@ def generate_all_fish(
     verbose=False,
     names=None
 ):
-    """Generate some replica fish
+    """Generate both replica and regular fish
 
     Arguments:
-        n_fish {int} -- Number of fish to generate
+        n_fish {int} -- Number of ideal fish to generate
         n_replica_fish {int} -- Number of replica fish to generate
         channel {Channel} -- Channel instance
         interaction {Interaction} -- Interaction instance
+        k_coh {float} -- Parameter to Delight Fish
+        k_ar {float} -- Weighting of neighbors in Delight Fish
+        alpha {int} -- Goal distance from neighbor for Delight Fish
         lim_neighbors {list} -- Tuple of min and max neighbors
+        weights {float|list} -- List of weights for replica fish learned function
         neighbor_weight {float|list} -- List of neighbor weights
         fish_max_speeds {float|list} -- List of max speeds
         clock_freqs {int|list} -- List of clock speeds

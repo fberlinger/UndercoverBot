@@ -20,9 +20,7 @@ class ReplicaFish():
 
     Each fish has an ID, communicates over the channel, and perceives its
     neighbors and takes actions accordingly. In taking actions, the fish can
-    weight information from neighbors based on their distance. The fish aims to
-    stay between a lower and upper limit of neighbors to maintain a cohesive
-    collective. It can moves at a maximal speed and updates its behavior on
+    weight information from neighbors based on their distance.  It can moves at a maximal speed and updates its behavior on
     every clock tick.
     """
 
@@ -44,7 +42,7 @@ class ReplicaFish():
             channel {class} -- Communication channel.
             interaction {class} -- Interactions which include perception of
                 neighbors and own movement.
-            weights {array} -- Weights for mlp governming neighbor weight
+            weights {array} -- Weights for neural network governing movement
 
         Keyword Arguments:
             fish_max_speed {number} -- Max speed of each fish. Defines by how
@@ -79,7 +77,7 @@ class ReplicaFish():
         # the output is the velocity direction (x, y) and speed
         # We appropriately scale output
         # Both hidden and output layer have bias
-        # activation function is the
+        # activation function is the logistic sigmoid
 
         self.input_to_hidden = np.reshape(weights[:6], (2, 3))
         self.bias_hidden = np.reshape(weights[6:9], (1, 3))
@@ -144,15 +142,6 @@ class ReplicaFish():
                 print('Warning frequency too high or computer too slow')
 
 
-    # def move_handler(self, event):
-    #     """Handle move events, i.e., update the target position.
-
-    #     Arguments:
-    #         event {Move} -- Event holding an x and y target position
-    #     """
-    #     self.target_pos[0] = event.x
-    #     self.target_pos[1] = event.y
-
     def ping_handler(self, neighbors, rel_pos, event):
         """Handle ping events
 
@@ -190,22 +179,28 @@ class ReplicaFish():
             rel_pos_to_neighbor {np.array} -- Relative position to a neighbor
 
         Returns:
-            float -- Weight for this neighbor
+            np.array -- Velocity contribution of this neighbor to fish's
+                final new velocity
         """
         #print(rel_pos_to_neighbor)
 
+        # It is extrememly unlikely that a fish may be exactly on top of another
+        # but if that occurs, we pretend the other fish was simply very close
+        # to avoid division by zero errors. Tracking neighbor spacing
+        # allows us to verify the quality of the learned function
         dist_neighbor = max(0.00001, np.linalg.norm(rel_pos_to_neighbor))
         self.neighbor_spacing.append(np.abs(dist_neighbor))
 
-        # to do: parameterize normalization
+        # Neural Networks do best when inputs are normalized. The max
+        # distance of a neighbor is the communication radius, set to 100
+        # so we divide by that to get input values between -1 and 1
         neighbor_normalized = rel_pos_to_neighbor / 100
         hidden = np.dot(neighbor_normalized, self.input_to_hidden) + \
                     self.bias_hidden
         hidden = self.logistic_sigmoid(hidden)
 
 
-        # run output layer - only need to do this with final input, as we discard previous outputs
-        # figure out how to scale appropriately
+        # run output layer and appropriately scale
         output = self.logistic_sigmoid(np.dot(hidden, self.hidden_to_output) + self.bias_output)
         #print(output)
         output = np.reshape(output, (3, ))
@@ -218,16 +213,14 @@ class ReplicaFish():
 
         else:
             final_velocity_vector = output[0:2]
-        #print(final_velocity_vector)
         return np.reshape(final_velocity_vector, (2,))
 
 
     def move(self, neighbors, rel_pos):
-        """Make a cohesion and target-driven move
+        """Move given the position of one's neighbors
 
-        The move is determined by the relative position of the centroid and a
-        target position and is limited by the maximum fish speed.
-        This move is random, but limited by maximum fish speed
+        The move is determined by summing the learned function applied across
+        all neighbors
 
         Arguments:
             neighbors {set} -- Set of active neighbors, i.e., other fish that
@@ -242,7 +235,7 @@ class ReplicaFish():
         # Get the centroid of the swarm
         new_velocity = np.zeros(2,)
 
-        # reset neighbors:
+        # We track neighbor spacing to evaluating model quality.
         self.neighbor_spacing = []
         for neighbor in neighbors:
             neighbor_vector = self.weight_neighbor(rel_pos[neighbor])
@@ -261,15 +254,15 @@ class ReplicaFish():
         if self.verbose:
             print('Fish #{}: move to {}'.format(self.id, final_move))
 
+        # We track speed and orientation to provide to classifier for
+        # Turing Learning
         self.speed = np.linalg.norm(final_move)
 
-                # set orientation in direction of velocity
+        # set orientation in direction of velocity
         if (final_move[0] == 0):
             self.orientation = (np.pi / 2) * np.sign(final_move[1])
         else:
             self.orientation = np.arctan(final_move[1] / final_move[0])
-        #print(self.orientation)
-        #print(final_move)
 
         return final_move
 
@@ -295,10 +288,10 @@ class ReplicaFish():
 
 
         if self.clock > 1:
-            # Move around (or just stay where you are)
+            # Move around
             self.interaction.move(self.id, self.move(neighbors, rel_pos))
 
-        # Update behavior based on status and information - update behavior
+        # Update current neighbors
         self.neighbors = neighbors
 
         # self.log(neighbors)

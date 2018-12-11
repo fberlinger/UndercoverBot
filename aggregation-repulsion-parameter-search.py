@@ -16,7 +16,11 @@ from channel import Channel
 from observer import Observer
 
 from utils import generate_distortion, generate_fish, generate_replica_fish, generate_all_fish, run_simulation
+"""
+This file runs tests used to set the parameter for the Delight Fish.
+When run, it will output graphs of varying values of K_ar parameter.
 
+"""
 # 21 categorical colors. Used for plotting
 colors = [
     [230/255, 25/255, 75/255, 1.0],
@@ -44,6 +48,28 @@ colors = [
 
 
 def run_trial(run_time, num_fish, initial_spread, k_ar, alpha):
+    """
+    Run a single simulation.
+
+    Arguments:
+    run_time {int} -- Length of time to run simulation
+    num_fish {int} -- Number of fish in swarm
+    initial_spread {int} -- Initial spread of fish's randomly initialized positions.
+        This is essentially the max diameter of the school, where we to encircle it,
+        at the start of the simulation
+    k_ar {float} -- Paramter used by delight fish to weight importance of each
+        neighbor's contribution to final velocity
+    alpha {float} -- Equilibrium distance for Delight Fish's neighbors
+
+    Returns:
+        fish_xs {list of int lists} - x positions of each fish at each timestep.
+        fish_ys {list of int lists} - y positions of each fish at each timestep
+        neighbor_distances {float list} -- the average distance between a fish
+            and its detected neighbors across all time steps
+        avg_speeds {float list} -- the average speed of all fish at each time step
+
+
+    """
     run_time = run_time # in seconds
     num_fish = num_fish
     num_replica_fish = 0
@@ -91,10 +117,22 @@ def run_trial(run_time, num_fish, initial_spread, k_ar, alpha):
     fish_ys = observer.y
     neighbor_distances = observer.avg_dist
     avg_speeds = observer.avg_speed
-    return fish_xs, fish_ys, neighbor_distances, avg_speeds, observer.object[0], observer.object[1]
+    return fish_xs, fish_ys, neighbor_distances, avg_speeds
 
 
-def plot_fish(ax, fish_xs, fish_ys, title, x_axis, y_axis):
+def plot_fish(ax, fish_xs, fish_ys, title):
+    """
+    Generate a visualization of the fish in simulation
+
+    Arguements:
+    ax {matplotlib Axis} -- axis to plot the fish on
+    fish_xs {list of int lists} -- list of each fish's x position over time
+        indexed by fish id
+    fish_ys {list of int lists} -- list of each fish's y position over time.
+        Indexed by fish id
+    title {string} -- Title to add to top of plot.
+
+    """
     num_fish = len(fish_xs)
     for i in range(num_fish):
             c = colors[i%20]
@@ -120,28 +158,19 @@ def plot_fish(ax, fish_xs, fish_ys, title, x_axis, y_axis):
     ax.spines['top'].set_color('black')
     ax.spines['right'].set_color('black')
 
-    # ax.spines['bottom'].set_color('white')
-    # ax.spines['left'].set_color('white')
-    # ax.tick_params(axis='x', colors='white')
-    # ax.tick_params(axis='y', colors='white')
-    # ax.yaxis.label.set_color('white')
-    # ax.xaxis.label.set_color('white')
-    # ax.title.set_color('white')
-
-    # add axis
-    # ax.scatter(
-    #     x_axis,
-    #     y_axis,
-    #     marker=(5, 1, 0),
-    #     facecolors='white',
-    #     edgecolors='white',
-    #     s=2000,
-    #     alpha = 0.5
-    # )
 
     ax.set_title(title)
 
 def plot_dist(ax, distances):
+    """
+    Plot the average distance between a fish and its neighbors
+    over the course of a simulation.
+
+    Arguements:
+        ax {Matplotlib Axis} -- the axis to make the plot on
+        distances {flot list} -- the average distance at each timestep
+
+    """
     ax.plot(range(len(distances)), distances)
     ax.scatter(range(len(distances)), distances)
     ax.set_xlabel("Time")
@@ -149,6 +178,13 @@ def plot_dist(ax, distances):
     ax.set_title("Mean neighbor spacing over time")
 
 def plot_speed(ax, speeds):
+    """
+    Plot the average speed of a fish over the course of a simulation.
+
+    Arguements:
+        ax {Matplotlib Axis} -- the axis to make the plot on
+        distances {flot list} -- the average speed at each timestep
+    """
     ax.plot(range(len(speeds)), speeds)
     ax.scatter(range(len(speeds)), speeds)
     ax.set_xlabel("Time")
@@ -157,6 +193,15 @@ def plot_speed(ax, speeds):
 
 
 def main():
+    """
+    Search through varying preset parameters for k_ar. You can also
+    vary alpha, the goal fish distance, to see how the weight parameter's
+    effectiveness changes. At conclusion, the program will output a plot
+    for each inputs with the simulation visualized and average neighbor distance
+    and average speed over time. There are also two plots for neighbor distance
+    and average speed with data from all parameter values aggregated into
+    a single graph. This graph is most useful for deciding on a final value for k_ar
+    """
     _, (dist_ax, speed_ax) = plt.subplots(2,1)
     ks = [0.03, 0.01, 0.005, 0.003]
     #alphas = [0.5, 1, 2, 3.5, 4]
@@ -167,7 +212,7 @@ def main():
 
     for k in ks:
         #for alpha in alphas:
-        xs, ys, neighbors, speeds, x_axis, y_axis = run_trial(time, fish, initial_spread, k, alpha)
+        xs, ys, neighbors, speeds = run_trial(time, fish, initial_spread, k, alpha)
 
         # create figure for this trial
         fig = plt.figure(figsize=(12, 8))
@@ -178,7 +223,7 @@ def main():
 
 
         title = "{} fish, {} initial spread, {} k_ar, {} time, {} alpha".format(fish, initial_spread, k, time, alpha)
-        plot_fish(fish_ax, xs, ys, title, x_axis, y_axis)
+        plot_fish(fish_ax, xs, ys, title)
         plot_dist(trial_dist_ax, neighbors)
         plot_speed(trial_speed_ax, speeds)
 

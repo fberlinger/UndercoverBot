@@ -380,11 +380,13 @@ class Observer():
         total_speed = 0
 
         for i in range(self.num_nodes):
+            # Tracking x, y, and orientation is useful both for
+            # visualization and learning
             self.x[i].append(self.environment.node_pos[i, 0])
             self.y[i].append(self.environment.node_pos[i, 1])
             self.o[i].append(self.fish[i].orientation)
 
-            # also collect linear and angular speed
+            # also collect and calculate linear and angular speed
             if len(self.x[i]) > 2:
                 prev_x = self.x[i][-2]
                 curr_x = self.x[i][-1]
@@ -395,7 +397,7 @@ class Observer():
                 prev_orient = self.o[i][-2]
                 curr_orient = self.o[i][-1]
 
-                # normalize by max speec, assume 9
+                # normalize by max speed, assume 9
                 speed = np.linalg.norm( \
                                         np.array(prev_x, prev_y) -  \
                                         np.array(curr_x, curr_y)) \
@@ -408,13 +410,6 @@ class Observer():
 
 
             n = len(self.fish[i].neighbors)
-
-            # if n < self.fish[i].lim_neighbors[0]:
-            #     self.status[i].append(-1)
-            # elif n > self.fish[i].lim_neighbors[1]:
-            #     self.status[i].append(1)
-            # else:
-            #     self.status[i].append(0)
 
             neighbor_distances += sum(self.fish[i].neighbor_spacing)
             num_neighbor_pairs += len(self.fish[i].neighbor_spacing)
@@ -437,12 +432,6 @@ class Observer():
         """Plot the fish movement
         """
         ax = plt.gca()
-        #for fish_index in range(self.num_nodes):
-            #print("fish {}".format(self.fish[fish_index].id))
-            #print("linear speeds")
-            #print(self.lin_speed[fish_index])
-            #print("orientations")
-            #print(self.ang_speed[fish_index])
 
         if self.is_instructed and not no_star:
             plt.scatter(

@@ -37,8 +37,7 @@ class Fish():
         clock_freq=1,
         neighbor_weight=1.0,
         name='Unnamed',
-        verbose=False,
-        cohesion=False
+        verbose=False
     ):
         """Create a new fish
 
@@ -47,7 +46,7 @@ class Fish():
             channel {class} -- Communication channel.
             interaction {class} -- Interactions which include perception of
                 neighbors and own movement.
-            k_coh {number} -- weight given to cohesion behavior
+            k_coh {number} -- weight given to cohesion behavior (unused so far)
             k_ar {number} -- weight given to attraction-repulsion behavior
             alpha {number} -- desired distance between fish
 
@@ -57,7 +56,7 @@ class Fish():
                 (default: {0, math.inf})
             fish_max_speed {number} -- Max speed of each fish. Defines by how
                 much it can change its position in one simulation step.
-                (default: {1})
+                (default: {9})
             clock_freq {number} -- Behavior update rate in Hertz (default: {1})
             neighbor_weight {number} -- A weight based on distance that defines
                 how much each of a fish's neighbor affects its next move.
@@ -96,24 +95,21 @@ class Fish():
         self.hop_distance = 0
         self.hop_count_initiator = False
         self.initial_hop_count_clock = 0
-        self.neighbor_spacing = [] # track neighbor distances
-        self.orientation = 0 # track orientation, which is same as velocity
-        self.speed = None
-
         self.leader_election_max_id = -1
         self.last_leader_election_clock = -1
+
+        # Turing Learning Data Collection
+        # track neighbor distances for plotting swarm behavior
+        self.neighbor_spacing = []
+        # track orientation and speed to use to feed to classifier
+        self.orientation = 0
+        self.speed = None
 
         now = datetime.datetime.now()
 
         # Stores messages to be send out at the end of the clock cycle
         self.messages = []
 
-        # Logger instance
-        # with open('{}_{}.log'.format(self.name, self.id), 'w') as f:
-        #     f.truncate()
-        #     f.write('TIME  ::  #NEIGHBORS  ::  INFO  ::  ({})\n'.format(
-        #         datetime.datetime.now())
-        #     )
 
     def start(self):
         """Start the process
@@ -145,7 +141,7 @@ class Fish():
             )
 
     def run(self):
-        """Run the process recursively
+        """Run the process iteratively until stop
 
         This method simulates the fish and calls `eval` on every clock tick as
         long as the fish `is_started`.
@@ -274,22 +270,6 @@ class Fish():
                 self.id, event.message, event.source_id
             ))
 
-
-
-    def weight_neighbor(self, rel_pos_to_neighbor):
-        """Weight neighbors by the relative position to them
-
-        Currently only returns a static value but this could be tweaked in the
-        future to calculate a weighted center point.
-
-        Arguments:
-            rel_pos_to_neighbor {np.array} -- Relative position to a neighbor
-
-        Returns:
-            float -- Weight for this neighbor
-        """
-        return self.neighbor_weight
-
     def start_leader_election_handler(self, event):
         """Leader election start handler
 
@@ -309,6 +289,7 @@ class Fish():
 
     def attraction_repulsion(self, rel_pos_to_neighbor):
         """ Compute the attraction-repulsion component of neighbor influnce on velocity
+        Function used formulated in Delight's paper
 
         Arguments:
             rel_pos_to_neighbor {np.array} -- Relative position to a neighbor
@@ -364,6 +345,7 @@ class Fish():
         self.speed = np.linalg.norm(final_move)
 
         # set orientation in direction of velocity
+        # Orientatation tracked for Turing Learning data creation
         if (final_move[0] == 0):
             self.orientation = (np.pi / 2) * np.sign(final_move[1])
         else:

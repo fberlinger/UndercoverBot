@@ -3,9 +3,18 @@ import numpy as np
 
 class Optimizer():
     """
-    This class implements an optimizer for the genetic algorithm
+    This class implements an optimizer for evolution. We could
+    change the underlying evolutionary strategy without having
+    to change the rest of the code.
 
-    Includes initialization, updating, scoring criteria, and more
+    The second input to the CMAEvolutionary strategy is a base
+    value for sigma. A value of 1 seems to lead to bigger differences
+    in the beginning. Bounding the weights prevents the neural
+    networks from having problems with integer overflow. Normal
+    network weights are also bounded - having a nonlinear function
+    at each level allows this.
+
+    Includes initialization, updating, and scoring
     """
 
     def init_model(self, num_weights, popsize):
