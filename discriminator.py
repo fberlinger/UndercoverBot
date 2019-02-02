@@ -26,8 +26,8 @@ class Classifier():
         self.hidden_to_output = np.reshape(weights[40:45], (5, 1))
         self.bias_output = np.reshape(weights[45:46], (1, 1))
 
-        self.radius1 = weights[46]
-        self.radius2 = weights[47]
+        self.radius1 = (weights[46] + 10) * 300. / 20.
+        self.radius2 = (weights[47] + 10.) * 300. / 20.
     def logistic_sigmoid(self, x):
         return 1 / (1 + np.exp(-x))
 

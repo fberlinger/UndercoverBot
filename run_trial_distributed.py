@@ -89,7 +89,7 @@ def run_full_test(weights, real = False):
 # network architecture for the fish and the classifier
 opt = Optimizer()
 pop_size = 100
-num_generations = 200
+num_generations = 300
 opt.init_model(21, pop_size)
 opt.init_classifier(48, pop_size)
 
@@ -106,7 +106,7 @@ opt.init_classifier(48, pop_size)
 # 16 processes, but at that point the speed up was not much more and
 # my other programs were slower. 8 processes also allows me to run
 # ~5 trials at once and still use my (slower then) computer
-pool = Pool(processes = 8)
+pool = Pool(processes = 16)
 for i in range(num_generations):
     print("Gen {}".format(i))
     # In a generation, we get new weights, then run simulations and
@@ -151,20 +151,20 @@ for i in range(num_generations):
     # Saving state every ten trials allows us to go abck and look at
     # learned behavior over the generations
     if (i % 10 == 0):
-        filename = "norm_test_dist5-iter{}-radii-only.pkl".format(i)
+        filename = "aws-trial/trial-one/opt-trial{}.pkl".format(i)
         with open(filename, "wb") as output:
             pickle.dump(opt, output, pickle.HIGHEST_PROTOCOL)
 
         # also save scores
-        filename = "norm_test_dist5-iter{}-scores-radii-only.pkl".format(i)
+        filename = "aws-trial/trial-one/opt-scores-trial{}.pkl".format(i)
         with open(filename, "wb") as output:
             pickle.dump((class_scores, model_scores), output, pickle.HIGHEST_PROTOCOL)
 pool.close()
 pool.join()
 
 # save final weights and scores to file for evalution.
-with open("norm_test_dist5-radii-only-end.pkl", 'wb') as output:
+with open("aws-trial/trial-one/opt-end.pkl".format(i), 'wb') as output:
     pickle.dump(opt, output, pickle.HIGHEST_PROTOCOL)
 
-with open("norm_test_dist5_scores-radii-only-end.pkl", "wb") as output:
+with open("aws-trial/trial-one/opt-trial{}-end.pkl".format(i), "wb") as output:
     pickle.dump((class_scores, model_scores), output, pickle.HIGHEST_PROTOCOL)
