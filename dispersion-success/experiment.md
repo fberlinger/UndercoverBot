@@ -45,7 +45,8 @@ Radius add ten, mutliply by 20/300 to get from evolved weight
 Note: bug in classifying radius - want to multiply by inverse.
 
 # Test 3
-Fix bug in test 2 - change to mutliply by 300 / 20 for full range of possible radii.
+Fix bug in test 2 
+- change to mutliply by 300 / 20 for full range of possible radii.
 Evolution sigma: 1
 Notes: the best model swims in a a curly-Q. Avg. neighbor distance stays small, but keep at max velocity. Radii one ranges mid 20s to mid40s. Radii 2 ranges 60-80, with most about 70. Model scores 0.3 - 0.8, high variance. Class scores 0.3-0.4
 
