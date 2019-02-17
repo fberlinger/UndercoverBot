@@ -7,6 +7,7 @@ import threading
 
 from channel import Channel
 from environment import Environment
+from interaction import Interaction
 from replica_fish import ReplicaFish
 from DelightFish import Fish
 from observer import Observer
@@ -119,62 +120,58 @@ def generate_fish(
     return fish
 
 def generate_replica_fish(
-    n,
-    channel,
+    n_fish,
+    channel, 
     interaction,
-    lim_neighbors,
-    neighbor_weights=None,
+    weights,
     fish_max_speeds=None,
     clock_freqs=None,
     verbose=False,
     names=None
 ):
-    """Generate some replica fish
+    """Generate some fish
 
     Arguments:
-        n {int} -- Number of replica fish to generate
+        n_fish {int} -- Number of fish to generate
         channel {Channel} -- Channel instance
         interaction {Interaction} -- Interaction instance
-        lim_neighbors {list} -- Tuple of min and max neighbors
-        neighbor_weight {float|list} -- List of neighbor weights
-        fish_max_speeds {float|list} -- List of max speeds
+        weights {float|list} -- List of weights for NN controller
+        fish_max_speeds {float|list} -- List of max speeds for fish
         clock_freqs {int|list} -- List of clock speeds
-        names {list} -- List of names for your replica fish
+        names {list} -- List of names for your fish
+    Returns:
+        {ReplicaFish|list} -- List of initialized ReplicaFish objects 
     """
 
-    if neighbor_weights is None:
-        neighbor_weights = [1.0] * n
-    elif not isinstance(neighbor_weights, list):
-        neighbor_weights = [neighbor_weights] * n
-
     if fish_max_speeds is None:
-        fish_max_speeds = [1.0] * n
+        fish_max_speeds = [1.0] * n_fish
+
     elif not isinstance(fish_max_speeds, list):
-        fish_max_speeds = [fish_max_speeds] * n
+        fish_max_speeds = [fish_max_speeds] * n_fish
 
     if clock_freqs is None:
-        clock_freqs = [1] * n
+        clock_freqs = [1] * n_fish
+
     elif not isinstance(clock_freqs, list):
-        clock_freqs = [clock_freqs] * n
+        clock_freqs = [clock_freqs] * n_fish
 
     if names is None:
-        names = ['Unnamed'] * n
+        names = ['Unnamed'] * n_fish
 
-    replica_fish = []
-    for i in range(n):
-        replica_fish.append(ReplicaFish(
+    fish = []
+
+    for i in range(0, n_fish):
+        fish.append(ReplicaFish(
             id=i,
             channel=channel,
             interaction=interaction,
-            lim_neighbors=lim_neighbors,
-            neighbor_weight=neighbor_weights[i],
+            weights = weights,
             fish_max_speed=fish_max_speeds[i],
             clock_freq=clock_freqs[i],
-            verbose=verbose,
-            name=names[i]
+            name=names[i],
+            verbose=verbose
         ))
-
-    return replica_fish
+    return fish
 
 def generate_all_fish(
     n_fish,
@@ -425,4 +422,199 @@ def run_simulation(
     if not plot:
         observer_thread.join()
 
+# 21 categorical colors. Used for plotting
+colors = [
+    [230/255, 25/255, 75/255, 1.0],
+    [60/255, 180/255, 75/255, 1.0],
+    [255/255, 225/255, 25/255, 1.0],
+    [0/255, 130/255, 200/255, 1.0],
+    [245/255, 130/255, 48/255, 1.0],
+    [145/255, 30/255, 180/255, 1.0],
+    [70/255, 240/255, 240/255, 1.0],
+    [240/255, 50/255, 230/255, 1.0],
+    [210/255, 245/255, 60/255, 1.0],
+    [250/255, 190/255, 190/255, 1.0],
+    [0/255, 128/255, 128/255, 1.0],
+    [230/255, 190/255, 255/255, 1.0],
+    [170/255, 110/255, 40/255, 1.0],
+    [255/255, 250/255, 200/255, 1.0],
+    [128/255, 0/255, 0/255, 1.0],
+    [170/255, 255/255, 195/255, 1.0],
+    [128/255, 128/255, 0/255, 1.0],
+    [255/255, 215/255, 180/255, 1.0],
+    [0/255, 0/255, 128/255, 1.0],
+    [128/255, 128/255, 128/255, 1.0],
+    [0/255, 0/255, 0/255, 1.0],
+]
 
+
+def run_replica_trial(run_time, num_fish, initial_spread, weights):
+    """
+    Run a single simulation for the purposes of illustrating it. 
+
+    Arguments:
+    run_time {int} -- Length of time to run simulation
+    num_fish {int} -- Number of fish in swarm, must be replicas
+    initial_spread {int} -- Initial spread of fish's randomly initialized positions.
+        This is essentially the max diameter of the school, where we to encircle it,
+        at the start of the simulation
+    weights {float|list} -- list of weights governing fish behavior (replica fish)
+
+    Returns:
+        fish_xs {list of int lists} - x positions of each fish at each timestep.
+        fish_ys {list of int lists} - y positions of each fish at each timestep
+        neighbor_distances {float list} -- the average distance between a fish
+            and its detected neighbors across all time steps
+        avg_speeds {float list} -- the average speed of all fish at each time step
+    """
+
+    run_time = run_time # in seconds
+    num_fish = num_fish
+    arena_size = 200
+    arena_center = arena_size / 2.0
+    initial_spread = initial_spread
+    fish_pos = initial_spread * np.random.rand(num_fish, 2) + arena_center - initial_spread / 2.0
+    clock_freqs = 1
+    verbose = False
+
+    distortion = generate_distortion(type='none', n=arena_size)
+    environment = Environment(
+        node_pos=fish_pos,
+        distortion=distortion,
+        prob_type='binary',
+        noise_magnitude=0,
+        conn_thres=100,
+        verbose=verbose
+    )
+    interaction = Interaction(environment, verbose=verbose)
+    channel = Channel(environment)
+
+    fish = generate_replica_fish(
+        n_fish=num_fish,
+        channel=channel,
+        interaction=interaction,
+        weights=weights,
+        fish_max_speeds=9,
+        clock_freqs=clock_freqs,
+        verbose=verbose
+    )
+    channel.set_nodes(fish)
+
+    observer = Observer(fish=fish, environment=environment, channel=channel)
+    run_simulation(fish=fish, observer=observer, run_time=run_time,
+        dark=True, white_axis=False, no_legend=True, no_star=False,
+        show_dist_plot=True, plot=False)
+
+    fish_xs = observer.x
+    fish_ys = observer.y
+    neighbor_distances = observer.avg_dist
+    avg_speeds = observer.avg_speed
+    return fish_xs, fish_ys, neighbor_distances, avg_speeds
+
+
+def plot_fish(fish_xs, fish_ys, filename):
+
+    """
+    Generate a visualization of the fish in simulation and save the file
+
+    Arguments:
+    fish_xs {list of int lists} -- list of each fish's x position over time
+        indexed by fish id
+    fish_ys {list of int lists} -- list of each fish's y position over time.
+        Indexed by fish id
+    filename {string} -- file in which to save visualization
+    """
+
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+
+    num_fish = len(fish_xs)
+    for i in range(num_fish):
+            c = colors[i%20]
+            if i != 0 and not i % 20:
+                c = [1.0, 1.0, 1.0, 1.0]
+
+            # Plot fish trajectories
+            ax.plot(fish_xs[i], fish_ys[i], c=c,
+                linewidth=2.0, alpha=0.4)
+            ax.scatter(fish_xs[i], fish_ys[i], c=c,
+                marker='o', alpha=0.2)
+
+            # plot fish start
+            ax.scatter(fish_xs[i][0], fish_ys[i][0], c=c,
+                        marker='>', s=200, alpha=0.5)
+
+            # plot fish final
+            ax.scatter(fish_xs[i][-1], fish_ys[i][-1], c=c,
+                        marker='s', s=200,alpha=1, zorder = 100)
+
+    # format black background, white axis
+    ax.set_facecolor((0, 0, 0))
+    ax.spines['top'].set_color('black')
+    ax.spines['right'].set_color('black')
+
+    # save visualization
+    plt.savefig(filename)
+
+
+def plot_dist(distances, filename):
+    """
+    Plot the average distance between a fish and its neighbors
+    over the course of a simulation and save this graph
+
+    Arguements:
+        distances {flot list} -- the average distance at each timestep
+        filename {string} -- name of file in which to save graph
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+
+    ax.plot(range(len(distances)), distances)
+    ax.scatter(range(len(distances)), distances)
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Mean neighbor spacing")
+
+    plt.savefig(filename)
+
+def plot_speed(speeds, filename):
+    """
+    Plot the average speed of a fish over the course of a simulation.
+
+    Arguments:
+        distances {float | list} -- the average speed at each timestep
+        filename {string} -- name of file in which to save graph
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+
+    ax.plot(range(len(speeds)), speeds)
+    ax.scatter(range(len(speeds)), speeds)
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Mean swarm speed")
+    plt.savefig(filename)
+
+
+def visualize_replica_fish(run_time, num_fish, trial_type, weights, root_filename):
+    """
+    Runs a single simulation and saves visualizations of it. Assumes all replica fish. 
+    Arguments:
+        run_time {int} -- Length of time to run simulation
+        num_fish {int} -- Number of fish in swarm
+        trial_type {string} -- Type of trial being trained. Must be aggregation or dispersion
+        root_filename {string} -- preface of all filenames. Will be appended with specific visualization
+
+    Saves a visualization of fish trajectories, neighbor distance, and speeeds
+    """
+
+    if trial_type == "dispersion":
+        initial_spread = 20
+    elif trial_type == "aggregation":
+        initial_spread = 100
+    else:
+        initial_spread = 40
+        print("bad trial type")
+
+    xs, ys, distances, speeds = run_replica_trial(run_time, num_fish, initial_spread, weights)
+    plot_fish(xs, ys, "{}-fish.png".format(root_filename))
+    plot_dist(distances, "{}-distances.png".format(root_filename))
+    plot_speed(speeds, "{}-speeds.png".format(root_filename))

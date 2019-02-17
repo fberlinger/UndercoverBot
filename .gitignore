@@ -1,0 +1,11 @@
+*.ipynb
+aggregation/*.pkl
+aggregation/*.png
+dispersion-success/*.pkl
+dispersion-success/*.png
+radii_vel/*.pkl
+radii_vel/*.png
+brute_force/trial_one/*.pkl
+brute_force/trial_one/*.png
+*.pem
+*.pyc
